@@ -6,7 +6,7 @@
 /*   By: rluiz <rluiz@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/09 18:26:51 by rluiz             #+#    #+#             */
-/*   Updated: 2024/01/10 04:00:29 by rluiz            ###   ########.fr       */
+/*   Updated: 2024/01/10 04:02:10 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -426,32 +426,31 @@ void	refresh_window(t_data *data)
 	}
 }
 
-
 void	creat_number_img(t_data *data)
 {
 	int	img_width;
 	int	img_height;
 
-	data->zero_img = mlx_xpm_file_to_image(data->mlx, "imgs/0.xpm",
-		&img_width, &img_height);
-	data->one_img = mlx_xpm_file_to_image(data->mlx, "imgs/1.xpm",
-		&img_width, &img_height);
-	data->two_img = mlx_xpm_file_to_image(data->mlx, "imgs/2.xpm",
-		&img_width, &img_height);
-	data->three_img = mlx_xpm_file_to_image(data->mlx, "imgs/3.xpm",
-		&img_width, &img_height);
-	data->four_img = mlx_xpm_file_to_image(data->mlx, "imgs/4.xpm",
-		&img_width, &img_height);
-	data->five_img = mlx_xpm_file_to_image(data->mlx, "imgs/5.xpm",
-		&img_width, &img_height);
-	data->six_img = mlx_xpm_file_to_image(data->mlx, "imgs/6.xpm",
-		&img_width, &img_height);
-	data->seven_img = mlx_xpm_file_to_image(data->mlx, "imgs/7.xpm",
-		&img_width, &img_height);
-	data->eight_img = mlx_xpm_file_to_image(data->mlx, "imgs/8.xpm",
-		&img_width, &img_height);
-	data->nine_img = mlx_xpm_file_to_image(data->mlx, "imgs/9.xpm",
-		&img_width, &img_height);
+	data->zero_img = mlx_xpm_file_to_image(data->mlx, "imgs/0.xpm", &img_width,
+		&img_height);
+	data->one_img = mlx_xpm_file_to_image(data->mlx, "imgs/1.xpm", &img_width,
+		&img_height);
+	data->two_img = mlx_xpm_file_to_image(data->mlx, "imgs/2.xpm", &img_width,
+		&img_height);
+	data->three_img = mlx_xpm_file_to_image(data->mlx, "imgs/3.xpm", &img_width,
+		&img_height);
+	data->four_img = mlx_xpm_file_to_image(data->mlx, "imgs/4.xpm", &img_width,
+		&img_height);
+	data->five_img = mlx_xpm_file_to_image(data->mlx, "imgs/5.xpm", &img_width,
+		&img_height);
+	data->six_img = mlx_xpm_file_to_image(data->mlx, "imgs/6.xpm", &img_width,
+		&img_height);
+	data->seven_img = mlx_xpm_file_to_image(data->mlx, "imgs/7.xpm", &img_width,
+		&img_height);
+	data->eight_img = mlx_xpm_file_to_image(data->mlx, "imgs/8.xpm", &img_width,
+		&img_height);
+	data->nine_img = mlx_xpm_file_to_image(data->mlx, "imgs/9.xpm", &img_width,
+		&img_height);
 }
 
 void	number_put_img(t_data *data, int number, int x, int y)
@@ -463,7 +462,8 @@ void	number_put_img(t_data *data, int number, int x, int y)
 	if (number == 2)
 		mlx_put_image_to_window(data->mlx, data->mlx_win, data->two_img, x, y);
 	if (number == 3)
-		mlx_put_image_to_window(data->mlx, data->mlx_win, data->three_img, x, y);
+		mlx_put_image_to_window(data->mlx, data->mlx_win, data->three_img, x,
+			y);
 	if (number == 4)
 		mlx_put_image_to_window(data->mlx, data->mlx_win, data->four_img, x, y);
 	if (number == 5)
@@ -471,9 +471,11 @@ void	number_put_img(t_data *data, int number, int x, int y)
 	if (number == 6)
 		mlx_put_image_to_window(data->mlx, data->mlx_win, data->six_img, x, y);
 	if (number == 7)
-		mlx_put_image_to_window(data->mlx, data->mlx_win, data->seven_img, x, y);
+		mlx_put_image_to_window(data->mlx, data->mlx_win, data->seven_img, x,
+			y);
 	if (number == 8)
-		mlx_put_image_to_window(data->mlx, data->mlx_win, data->eight_img, x, y);
+		mlx_put_image_to_window(data->mlx, data->mlx_win, data->eight_img, x,
+			y);
 	if (number == 9)
 		mlx_put_image_to_window(data->mlx, data->mlx_win, data->nine_img, x, y);
 }
@@ -501,7 +503,7 @@ void	collect_put_img(t_data *data)
 	int	y;
 	int	count;
 
-	x = (int)log(data->player->collect) * 50;
+	x = (int)(log(data->player->collect) / log(10)) * 50;
 	y = data->height - 50;
 	count = data->player->collect;
 	while (count > 0)
@@ -528,7 +530,7 @@ void	player_move(t_data *data, int keycode)
 	refresh_window(data);
 	count_put_img(data);
 	collect_put_img(data);
-	//ft_printf("move count: %d\n", data->move_count);
+	// ft_printf("move count: %d\n", data->move_count);
 }
 
 void	hook(int keycode, void *param)
