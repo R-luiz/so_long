@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rluiz <rluiz@student.42.fr>                +#+  +:+       +#+        */
+/*   By: rluiz <rluiz@student.42lehavre.fr>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/09 18:26:51 by rluiz             #+#    #+#             */
-/*   Updated: 2024/01/10 05:08:08 by rluiz            ###   ########.fr       */
+/*   Updated: 2024/01/10 18:44:26 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -182,22 +182,32 @@ int	ft_printf(const char *src, ...)
 int	is_rectangular(t_data *data)
 {
 	int	i;
-	int	j;
 	int	k;
+	int	j;
 
 	i = 0;
-	j = 0;
 	k = 0;
-	while (data->map[i])
+	j = 0;
+	k = ft_strlen(data->map[i]);
+	while (++i < ft_strstrlen(data->map))
 	{
-		while (data->map[i][j])
+		while (j < ft_strlen(data->map[i]))
+		{
+			if (data->map[i][j] != '1' && data->map[i][j] != '0'
+				&& data->map[i][j] != 'C' && data->map[i][j] != 'E'
+				&& data->map[i][j] != 'P' && data->map[i][j] != 'X')
+				return (0);
 			j++;
-		if (k == 0)
-			k = j;
-		if (k != j)
-			return (0);
+		}
 		j = 0;
-		i++;
+		if (k != ft_strlen(data->map[i]) || i == ft_strstrlen(data->map) - 1)
+		{
+			if (i == ft_strstrlen(data->map) - 1 && (k
+					- 1 == ft_strlen(data->map[i])))
+				return (1);
+			else
+				return (0);
+		}
 	}
 	return (1);
 }
@@ -209,47 +219,83 @@ int	check_border_wall(t_data *data)
 
 	i = 0;
 	j = 0;
+	while (i < ft_strlen(data->map[0]))
+	{
+		if (data->map[0][i] != '1')
+			return (0);
+		i++;
+	}
+	while (data->map[j])
+	{
+		if (data->map[j][0] != '1')
+			return (0);
+		j++;
+	}
+	i = 0;
+	while (i < ft_strlen(data->map[0]))
+	{
+		if (data->map[j - 1][i] != '1')
+			return (0);
+		i++;
+	}
+	j = 0;
+	while (data->map[j])
+	{
+		if (data->map[j][ft_strlen(data->map[0]) - 1] != '1')
+			return (0);
+		j++;
+	}
+	return (1);
+}
+
+t_pos	find_player(t_data *data)
+{
+	int		i;
+	int		j;
+	t_pos	pos;
+
+	i = 0;
+	j = 0;
+	pos = (t_pos){0, 0};
 	while (data->map[i])
 	{
 		while (data->map[i][j])
 		{
-			if (i == 0 || j == 0 || i == ft_strstrlen(data->map) - 1
-				|| j == ft_strlen(data->map[0]) - 1)
+			if (data->map[i][j] == 'P')
 			{
-				if (data->map[i][j] != '1')
-					return (0);
+				pos.x = j * 50;
+				pos.y = i * 50;
+				return (pos);
 			}
 			j++;
 		}
 		i++;
 		j = 0;
 	}
-	return (1);
+	return (pos);
 }
 
 int	is_solvable(t_data *data)
 {
-	int	i;
-	int	j;
-	int	count;
+	t_pos	pos;
+	int		i;
+	int		j;
 
-	i = 0;
-	j = 0;
-	count = 0;
-	while (data->map[i])
-	{
-		while (data->map[i][j])
-		{
-			if (data->map[i][j] == 'P')
-				count++;
-			j++;
-		}
-		i++;
-		j = 0;
-	}
-	if (count != 1)
-		return (0);
-	return (1);
+	pos = find_player(data);
+	// check if there is a void around the player
+	i = pos.y / 50;
+	j = pos.x / 50;
+	if (data->map[i - 1][j] == '0' || data->map[i + 1][j] == '0'
+		|| data->map[i][j - 1] == '0' || data->map[i][j + 1] == '0')
+		return (1);
+	if (data->map[i - 1][j] == 'C' || data->map[i + 1][j] == 'C'
+		|| data->map[i][j - 1] == 'C' || data->map[i][j + 1] == 'C')
+		return (1);
+	if (data->map[i - 1][j] == 'X' || data->map[i + 1][j] == 'X'
+		|| data->map[i][j - 1] == 'X' || data->map[i][j + 1] == 'X')
+		return (1);
+	
+	return (0);
 }
 
 void	check_map(t_data *data)
@@ -549,32 +595,6 @@ int	hook(int keycode, void *param)
 	return (0);
 }
 
-t_pos	find_player(t_data *data)
-{
-	int		i;
-	int		j;
-	t_pos	pos;
-
-	i = 0;
-	j = 0;
-	while (data->map[i])
-	{
-		while (data->map[i][j])
-		{
-			if (data->map[i][j] == 'P')
-			{
-				pos.x = j * 50;
-				pos.y = i * 50;
-				return (pos);
-			}
-			j++;
-		}
-		i++;
-		j = 0;
-	}
-	return (pos);
-}
-
 int	count_collect(t_data *data)
 {
 	int	i;
@@ -607,7 +627,7 @@ void	creat_img(t_data *data)
 		&img_width, &img_height);
 	data->wall_img = mlx_xpm_file_to_image(data->mlx, "imgs/wall.xpm",
 		&img_width, &img_height);
-	data->collect_img = mlx_xpm_file_to_image(data->mlx, "imgs/collect.xpm",
+	data->collect_img = mlx_xpm_file_to_image(data->mlx, "imgs/collect2.xpm",
 		&img_width, &img_height);
 	data->exit_img = mlx_xpm_file_to_image(data->mlx, "imgs/exit.xpm",
 		&img_width, &img_height);
@@ -700,6 +720,7 @@ int	main(int argc, char **argv)
 	data->nb_map = 10;
 	create_file_name(data, argv, argc);
 	parse_map(data);
+	check_map(data);
 	data->player = (t_player *)malloc(sizeof(t_player));
 	creat_img(data);
 	creat_number_img(data);
