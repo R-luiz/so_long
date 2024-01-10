@@ -6,7 +6,7 @@
 /*   By: rluiz <rluiz@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/09 18:26:51 by rluiz             #+#    #+#             */
-/*   Updated: 2024/01/10 04:55:06 by rluiz            ###   ########.fr       */
+/*   Updated: 2024/01/10 05:02:27 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -666,10 +666,15 @@ void	ft_strcpy2(t_data *data, char *map, int i)
 	}
 }
 
-void	create_file_name(t_data *data, char **argv)
+void	create_file_name(t_data *data, char **argv, int argc)
 {
 	char	*map;
 
+	if (argc == 1)
+	{
+		data->map_file = "maps/map1.ber";
+		return ;
+	}
 	if (ft_atoi(argv[1]) == 0 || (ft_atoi(argv[1]) > data->nb_map - 1))
 	{
 		ft_printf("Error input file\n");
@@ -693,7 +698,7 @@ int	main(int argc, char **argv)
 	data = (t_data *)malloc(sizeof(t_data));
 	data->mlx = mlx_init();
 	data->nb_map = 10;
-	create_file_name(data, argv);
+	create_file_name(data, argv, argc);
 	parse_map(data);
 	data->player = (t_player *)malloc(sizeof(t_player));
 	creat_img(data);
