@@ -6,14 +6,16 @@
 /*   By: rluiz <rluiz@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/09 18:26:51 by rluiz             #+#    #+#             */
-/*   Updated: 2024/01/10 02:44:11 by rluiz            ###   ########.fr       */
+/*   Updated: 2024/01/10 02:48:39 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "./minilibx-linux/mlx.h"
 #include <fcntl.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #define BUFFER_SIZE 1024
@@ -63,6 +65,78 @@ void	safeexit(t_data *data)
 	mlx_destroy_display(data->mlx);
 	free(data);
 	exit(0);
+}
+
+void	ft_putchar(char c)
+{
+	write(1, &c, 1);
+	return ;
+}
+
+void	ft_putstr(char *str)
+{
+	int	i;
+
+	i = 0;
+	while (str[i])
+	{
+		ft_putchar(str[i]);
+		i++;
+	}
+	return ;
+}
+
+void	ft_putnbr(int nb)
+{
+	if (nb == -2147483648)
+	{
+		write(1, "-2147483648", 11);
+		return ;
+	}
+	if (nb < 0)
+	{
+		write(1, "-", 1);
+		nb = -nb;
+	}
+	if (nb > 9)
+		ft_putnbr(nb / 10);
+	ft_putchar(nb % 10 + '0');
+	return ;
+}
+
+void	ft_putnbr_base(unsigned int nb, char *base, unsigned int size)
+{
+	if (nb >= size)
+		ft_putnbr_base(nb / size, base, size);
+	ft_putchar(base[nb % size]);
+	return ;
+}
+
+void	ft_pourcent(const char *src, va_list list, int i)
+{
+	if (src[i] == 's')
+		ft_putstr(va_arg(list, char *));
+	else if (src[i] == 'd')
+		ft_putnbr(va_arg(list, int));
+	return ;
+}
+
+int	ft_printf(const char *src, ...)
+{
+	int		i;
+	va_list	list;
+
+	i = -1;
+	va_start(list, src);
+	while (src[++i])
+	{
+		if (src[i] == '%')
+			ft_pourcent(src, list, ++i);
+		else
+			ft_putchar(src[i]);
+	}
+	va_end(list);
+	return (0);
 }
 
 int	is_rectangular(t_data *data)
@@ -143,24 +217,25 @@ void	check_map(t_data *data)
 	FILE	*file;
 	int		count;
 	char	buffer[BUFFER_SIZE];
+
 	if (is_rectangular(data) == 0)
 	{
-		printf("Error\n");
+		ft_printf("Error\n");
 		exit(0);
 	}
 	if (data->map == NULL)
 	{
-		printf("Error\n");
+		ft_printf("Error\n");
 		exit(0);
 	}
 	if (check_border_wall(data) == 0)
 	{
-		printf("Error\n");
+		ft_printf("Error\n");
 		exit(0);
 	}
 	if (is_solvable(data) == 0)
 	{
-		printf("Error\n");
+		ft_printf("Error\n");
 		exit(0);
 	}
 }
@@ -222,7 +297,7 @@ void	print_map(t_data *data)
 	i = 0;
 	while (data->map[i])
 	{
-		printf("%s", data->map[i]);
+		ft_printf("%s", data->map[i]);
 		i++;
 	}
 }
@@ -234,39 +309,46 @@ void	check_player_pos(t_data *data)
 	if (data->map[data->player->pos.y / 50][data->player->pos.x / 50] == 'C')
 	{
 		data->map[data->player->pos.y / 50][data->player->pos.x / 50] = 'P';
-		if (data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x / 50] == 'F')
-			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x / 50] = 'E';
+		if (data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x
+			/ 50] == 'F')
+			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x
+				/ 50] = 'E';
 		else
-			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x / 50] = '0';
+			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x
+				/ 50] = '0';
 		data->player->collect++;
-		printf("collect: %d / %d\n", data->player->collect, data->collect);
+		ft_printf("collect: %d / %d\n", data->player->collect, data->collect);
 	}
 	if (data->map[data->player->pos.y / 50][data->player->pos.x / 50] == 'E')
 	{
-		printf("collect: %d / %d\n", data->player->collect, data->collect);
+		ft_printf("collect: %d / %d\n", data->player->collect, data->collect);
 		if (data->player->collect < data->collect)
 		{
 			data->map[data->player->pos.y / 50][data->player->pos.x / 50] = 'F';
-			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x / 50] = '0';
-			printf("You need to collect all the collectibles before exiting!\n");
+			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x
+				/ 50] = '0';
+			ft_printf("You need to collect all the collectibles before exiting!\n");
 		}
 		else
 		{
-			printf("You win!\n");
+			ft_printf("You win!\n");
 			safeexit(data);
 		}
 	}
 	if (data->map[data->player->pos.y / 50][data->player->pos.x / 50] == 'X')
 	{
-		printf("You lose!\n");
+		ft_printf("You lose!\n");
 		safeexit(data);
 	}
 	if (data->map[data->player->pos.y / 50][data->player->pos.x / 50] == '0')
 	{
-		if (data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x / 50] == 'F')
-			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x / 50] = 'E';
+		if (data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x
+			/ 50] == 'F')
+			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x
+				/ 50] = 'E';
 		else
-			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x / 50] = '0';
+			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x
+				/ 50] = '0';
 		data->map[data->player->pos.y / 50][data->player->pos.x / 50] = 'P';
 	}
 }
@@ -293,14 +375,15 @@ void	refresh_window(t_data *data)
 					data->exit_img, i, j);
 			else if (data->map[j / 50][i / 50] == 'P')
 				mlx_put_image_to_window(data->mlx, data->mlx_win,
-						data->player_img, i, j);
+					data->player_img, i, j);
 			else if (data->map[j / 50][i / 50] == 'F')
 				mlx_put_image_to_window(data->mlx, data->mlx_win,
 					data->exitnplayer_img, i, j);
 			else if (data->map[j / 50][i / 50] == '1')
 				mlx_put_image_to_window(data->mlx, data->mlx_win,
 					data->enemy_img, i, j);
-			else if (data->map[j / 50][i / 50] == '0' || data->map[j / 50][i / 50] == 'C')
+			else if (data->map[j / 50][i / 50] == '0' || data->map[j / 50][i
+				/ 50] == 'C')
 				mlx_put_image_to_window(data->mlx, data->mlx_win,
 					data->void_img, i, j);
 			else if (data->map[j / 50][i / 50] == 'X')
@@ -325,7 +408,7 @@ void	player_move(t_data *data, int keycode)
 	if (keycode == 65363)
 		data->player->pos.x += 50;
 	data->move_count++;
-	printf("move count: %d\n", data->move_count);
+	ft_printf("move count: %d\n", data->move_count);
 	check_player_pos(data);
 	refresh_window(data);
 }
@@ -370,7 +453,7 @@ t_pos	find_player(t_data *data)
 	return (pos);
 }
 
-int		count_collect(t_data *data)
+int	count_collect(t_data *data)
 {
 	int	i;
 	int	j;
@@ -408,8 +491,8 @@ void	creat_img(t_data *data)
 		&img_width, &img_height);
 	data->enemy_img = mlx_xpm_file_to_image(data->mlx, "imgs/enemy.xpm",
 		&img_width, &img_height);
-	data->exitnplayer_img = mlx_xpm_file_to_image(data->mlx, "imgs/exitnplayer.xpm",
-		&img_width, &img_height);
+	data->exitnplayer_img = mlx_xpm_file_to_image(data->mlx,
+		"imgs/exitnplayer.xpm", &img_width, &img_height);
 	data->player->pos = find_player(data);
 	data->player_img = mlx_xpm_file_to_image(data->mlx, "imgs/player.xpm",
 		&img_width, &img_height);
@@ -454,8 +537,8 @@ int	main(void)
 	creat_img(data);
 	data->width = ft_strlen(data->map[0]) * 50;
 	data->height = ft_strstrlen(data->map) * 50;
-	printf("width: %d\n", data->width);
-	printf("height: %d\n", data->height);
+	ft_printf("width: %d\n", data->width);
+	ft_printf("height: %d\n", data->height);
 	data->mlx_win = mlx_new_window(data->mlx, data->width, data->height,
 		"so_long");
 	refresh_window(data);
