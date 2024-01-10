@@ -5,7 +5,7 @@ CC	=	cc
 SRC =	main.c
 
 OBJ = ${SRC:.c=.o}
-CFLAGS = -Wall -Wextra -O3 -g
+CFLAGS = -Wall -Wextra -Werror -O3 -g
 
 .c.o:
 	$(CC) $(CFLAGS) -I/minilibx-linux -c $< -o $(<:.c=.o)

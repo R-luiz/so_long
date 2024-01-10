@@ -6,7 +6,7 @@
 /*   By: rluiz <rluiz@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/09 18:26:51 by rluiz             #+#    #+#             */
-/*   Updated: 2024/01/10 04:02:10 by rluiz            ###   ########.fr       */
+/*   Updated: 2024/01/10 04:25:51 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 
 #define BUFFER_SIZE 1024
 
@@ -63,7 +64,7 @@ typedef struct
 	void		*mlx_win;
 }				t_data;
 
-void	safeexit(t_data *data)
+int	safeexit(t_data *data)
 {
 	mlx_destroy_image(data->mlx, data->void_img);
 	mlx_destroy_image(data->mlx, data->wall_img);
@@ -79,8 +80,11 @@ void	safeexit(t_data *data)
 
 void	ft_putchar(char c)
 {
-	write(1, &c, 1);
-	return ;
+	ssize_t bytes_written;
+
+	bytes_written = write(1, &c, 1);
+	if (bytes_written == -1) 
+		perror("write failed");
 }
 
 void	ft_putstr(char *str)
@@ -96,18 +100,43 @@ void	ft_putstr(char *str)
 	return ;
 }
 
+int	ft_strlen(char *str)
+{
+	int	i;
+
+	i = 0;
+	while (str[i])
+		i++;
+	return (i - 1);
+}
+
+int	ft_strstrlen(char **str)
+{
+	int	i;
+
+	i = 0;
+	while (str[i])
+		i++;
+	return (i);
+}
+
 void	ft_putnbr(int nb)
 {
+	ssize_t bytes_written;
+
+	bytes_written = 0;
 	if (nb == -2147483648)
 	{
-		write(1, "-2147483648", 11);
+		bytes_written = write(1, "-2147483648", 11);
 		return ;
 	}
 	if (nb < 0)
 	{
-		write(1, "-", 1);
+		bytes_written = write(1, "-", 1);
 		nb = -nb;
 	}
+	if (bytes_written == -1)
+		perror("write failed");
 	if (nb > 9)
 		ft_putnbr(nb / 10);
 	ft_putchar(nb % 10 + '0');
@@ -224,10 +253,6 @@ int	is_solvable(t_data *data)
 
 void	check_map(t_data *data)
 {
-	FILE	*file;
-	int		count;
-	char	buffer[BUFFER_SIZE];
-
 	if (is_rectangular(data) == 0)
 	{
 		ft_printf("Error\n");
@@ -248,26 +273,6 @@ void	check_map(t_data *data)
 		ft_printf("Error\n");
 		exit(0);
 	}
-}
-
-int	ft_strlen(char *str)
-{
-	int	i;
-
-	i = 0;
-	while (str[i])
-		i++;
-	return (i - 1);
-}
-
-int	ft_strstrlen(char **str)
-{
-	int	i;
-
-	i = 0;
-	while (str[i])
-		i++;
-	return (i);
 }
 
 int	get_line_count(const char *filename)
@@ -533,18 +538,14 @@ void	player_move(t_data *data, int keycode)
 	// ft_printf("move count: %d\n", data->move_count);
 }
 
-void	hook(int keycode, void *param)
+int	hook(int keycode, void *param)
 {
-	t_data		*data;
-	t_player	*player;
-
-	data = (t_data *)param;
-	player = data->player;
 	if (keycode == 65307)
 		safeexit(param);
 	if (keycode == 65362 || keycode == 65364 || keycode == 65361
 		|| keycode == 65363)
-		player_move(data, keycode);
+		player_move((t_data *)param, keycode);
+	return (0);
 }
 
 t_pos	find_player(t_data *data)
@@ -622,29 +623,51 @@ void	creat_img(t_data *data)
 	data->collect = count_collect(data);
 }
 
-int	main(void)
+char *ft_strcpy(char *dest, char *src)
+{
+	int	i;
+
+	i = 0;
+	while (src[i])
+	{
+		if (src[i] == '\n')
+			dest[i] = '\0';
+		else
+			dest[i] = src[i];
+		i++;
+	}
+	dest[i] = '\0';
+	return (dest);
+}
+
+void	create_file_name(t_data *data, char **argv)
+{
+	data->map_file = (char *)malloc(sizeof(char) * 14);
+	ft_strcpy(data->map_file, "maps/map");
+	data->map_file[9] = argv[1][0];
+	ft_strcpy(&data->map_file[10], ".ber");
+}
+
+int	main(int argc, char **argv)
 {
 	t_data		*data;
-	t_player	*player;
-	int			i;
-	int			j;
 
+	if (argc > 2)
+		ft_printf("Error input\n");
 	data = (t_data *)malloc(sizeof(t_data));
 	data->mlx = mlx_init();
-	data->map_file = "maps/map2.ber";
+	create_file_name(data, argv);
 	parse_map(data);
 	data->player = (t_player *)malloc(sizeof(t_player));
 	creat_img(data);
 	creat_number_img(data);
 	data->width = ft_strlen(data->map[0]) * 50;
 	data->height = ft_strstrlen(data->map) * 50;
-	ft_printf("width: %d\n", data->width);
-	ft_printf("height: %d\n", data->height);
 	data->mlx_win = mlx_new_window(data->mlx, data->width, data->height,
 		"so_long");
 	refresh_window(data);
 	mlx_hook(data->mlx_win, 33, 1L << 17, safeexit, data);
-	mlx_key_hook(data->mlx_win, hook, data);
+	mlx_key_hook(data->mlx_win, hook, (void *)data);
 	mlx_loop(data->mlx);
 	return (0);
 }
