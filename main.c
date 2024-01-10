@@ -6,7 +6,7 @@
 /*   By: rluiz <rluiz@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/09 18:26:51 by rluiz             #+#    #+#             */
-/*   Updated: 2024/01/10 04:25:51 by rluiz            ###   ########.fr       */
+/*   Updated: 2024/01/10 04:37:38 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -636,16 +636,33 @@ char *ft_strcpy(char *dest, char *src)
 			dest[i] = src[i];
 		i++;
 	}
-	dest[i] = '\0';
 	return (dest);
 }
 
 void	create_file_name(t_data *data, char **argv)
 {
-	data->map_file = (char *)malloc(sizeof(char) * 14);
-	ft_strcpy(data->map_file, "maps/map");
-	data->map_file[9] = argv[1][0];
-	ft_strcpy(&data->map_file[10], ".ber");
+	int	i;
+	
+	char *map;
+	map = "maps/map";
+	data->map_file = (char *)malloc(sizeof(char) * 16);
+	i = -1;
+	while (map[++i])
+		data->map_file[i] = map[i];
+	map = argv[1];
+	while (*map)
+	{
+		data->map_file[i] = *map;
+		map++;
+		i++;
+	}
+	map = ".ber";
+	while (*map)
+	{
+		data->map_file[i] = *map;
+		map++;
+		i++;
+	}
 }
 
 int	main(int argc, char **argv)
