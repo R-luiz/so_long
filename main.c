@@ -6,7 +6,7 @@
 /*   By: rluiz <rluiz@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/09 18:26:51 by rluiz             #+#    #+#             */
-/*   Updated: 2024/01/10 02:40:15 by rluiz            ###   ########.fr       */
+/*   Updated: 2024/01/10 02:44:11 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -291,12 +291,12 @@ void	refresh_window(t_data *data)
 			else if (data->map[j / 50][i / 50] == 'E')
 				mlx_put_image_to_window(data->mlx, data->mlx_win,
 					data->exit_img, i, j);
-			else if (data->map[j / 50][i / 50] == 'F')
-				mlx_put_image_to_window(data->mlx, data->mlx_win,
-					data->exitnplayer_img, i, j);
 			else if (data->map[j / 50][i / 50] == 'P')
 				mlx_put_image_to_window(data->mlx, data->mlx_win,
 						data->player_img, i, j);
+			else if (data->map[j / 50][i / 50] == 'F')
+				mlx_put_image_to_window(data->mlx, data->mlx_win,
+					data->exitnplayer_img, i, j);
 			else if (data->map[j / 50][i / 50] == '1')
 				mlx_put_image_to_window(data->mlx, data->mlx_win,
 					data->enemy_img, i, j);
@@ -311,8 +311,6 @@ void	refresh_window(t_data *data)
 		i += 50;
 		j = 0;
 	}
-	mlx_put_image_to_window(data->mlx, data->mlx_win, data->player_img,
-		data->player->pos.x, data->player->pos.y);
 }
 
 void	player_move(t_data *data, int keycode)
