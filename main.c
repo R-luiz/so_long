@@ -6,7 +6,7 @@
 /*   By: rluiz <rluiz@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/09 18:26:51 by rluiz             #+#    #+#             */
-/*   Updated: 2024/01/10 02:48:39 by rluiz            ###   ########.fr       */
+/*   Updated: 2024/01/10 04:00:29 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,16 @@ typedef struct
 	void		*player_img;
 	void		*enemy_img;
 	void		*exitnplayer_img;
+	void		*zero_img;
+	void		*one_img;
+	void		*two_img;
+	void		*three_img;
+	void		*four_img;
+	void		*five_img;
+	void		*six_img;
+	void		*seven_img;
+	void		*eight_img;
+	void		*nine_img;
 	t_player	*player;
 	char		**map;
 	char		*map_file;
@@ -240,6 +250,26 @@ void	check_map(t_data *data)
 	}
 }
 
+int	ft_strlen(char *str)
+{
+	int	i;
+
+	i = 0;
+	while (str[i])
+		i++;
+	return (i - 1);
+}
+
+int	ft_strstrlen(char **str)
+{
+	int	i;
+
+	i = 0;
+	while (str[i])
+		i++;
+	return (i);
+}
+
 int	get_line_count(const char *filename)
 {
 	FILE	*file;
@@ -396,6 +426,92 @@ void	refresh_window(t_data *data)
 	}
 }
 
+
+void	creat_number_img(t_data *data)
+{
+	int	img_width;
+	int	img_height;
+
+	data->zero_img = mlx_xpm_file_to_image(data->mlx, "imgs/0.xpm",
+		&img_width, &img_height);
+	data->one_img = mlx_xpm_file_to_image(data->mlx, "imgs/1.xpm",
+		&img_width, &img_height);
+	data->two_img = mlx_xpm_file_to_image(data->mlx, "imgs/2.xpm",
+		&img_width, &img_height);
+	data->three_img = mlx_xpm_file_to_image(data->mlx, "imgs/3.xpm",
+		&img_width, &img_height);
+	data->four_img = mlx_xpm_file_to_image(data->mlx, "imgs/4.xpm",
+		&img_width, &img_height);
+	data->five_img = mlx_xpm_file_to_image(data->mlx, "imgs/5.xpm",
+		&img_width, &img_height);
+	data->six_img = mlx_xpm_file_to_image(data->mlx, "imgs/6.xpm",
+		&img_width, &img_height);
+	data->seven_img = mlx_xpm_file_to_image(data->mlx, "imgs/7.xpm",
+		&img_width, &img_height);
+	data->eight_img = mlx_xpm_file_to_image(data->mlx, "imgs/8.xpm",
+		&img_width, &img_height);
+	data->nine_img = mlx_xpm_file_to_image(data->mlx, "imgs/9.xpm",
+		&img_width, &img_height);
+}
+
+void	number_put_img(t_data *data, int number, int x, int y)
+{
+	if (number == 0)
+		mlx_put_image_to_window(data->mlx, data->mlx_win, data->zero_img, x, y);
+	if (number == 1)
+		mlx_put_image_to_window(data->mlx, data->mlx_win, data->one_img, x, y);
+	if (number == 2)
+		mlx_put_image_to_window(data->mlx, data->mlx_win, data->two_img, x, y);
+	if (number == 3)
+		mlx_put_image_to_window(data->mlx, data->mlx_win, data->three_img, x, y);
+	if (number == 4)
+		mlx_put_image_to_window(data->mlx, data->mlx_win, data->four_img, x, y);
+	if (number == 5)
+		mlx_put_image_to_window(data->mlx, data->mlx_win, data->five_img, x, y);
+	if (number == 6)
+		mlx_put_image_to_window(data->mlx, data->mlx_win, data->six_img, x, y);
+	if (number == 7)
+		mlx_put_image_to_window(data->mlx, data->mlx_win, data->seven_img, x, y);
+	if (number == 8)
+		mlx_put_image_to_window(data->mlx, data->mlx_win, data->eight_img, x, y);
+	if (number == 9)
+		mlx_put_image_to_window(data->mlx, data->mlx_win, data->nine_img, x, y);
+}
+
+void	count_put_img(t_data *data)
+{
+	int	x;
+	int	y;
+	int	count;
+
+	x = data->width - 50;
+	y = data->height - 50;
+	count = data->move_count;
+	while (count > 0)
+	{
+		number_put_img(data, count % 10, x, y);
+		count /= 10;
+		x -= 50;
+	}
+}
+
+void	collect_put_img(t_data *data)
+{
+	int	x;
+	int	y;
+	int	count;
+
+	x = (int)log(data->player->collect) * 50;
+	y = data->height - 50;
+	count = data->player->collect;
+	while (count > 0)
+	{
+		number_put_img(data, count % 10, x, y);
+		count /= 10;
+		x -= 50;
+	}
+}
+
 void	player_move(t_data *data, int keycode)
 {
 	data->player->perv_pos = data->player->pos;
@@ -408,9 +524,11 @@ void	player_move(t_data *data, int keycode)
 	if (keycode == 65363)
 		data->player->pos.x += 50;
 	data->move_count++;
-	ft_printf("move count: %d\n", data->move_count);
 	check_player_pos(data);
 	refresh_window(data);
+	count_put_img(data);
+	collect_put_img(data);
+	//ft_printf("move count: %d\n", data->move_count);
 }
 
 void	hook(int keycode, void *param)
@@ -485,7 +603,7 @@ void	creat_img(t_data *data)
 		&img_width, &img_height);
 	data->wall_img = mlx_xpm_file_to_image(data->mlx, "imgs/wall.xpm",
 		&img_width, &img_height);
-	data->collect_img = mlx_xpm_file_to_image(data->mlx, "imgs/collect2.xpm",
+	data->collect_img = mlx_xpm_file_to_image(data->mlx, "imgs/collect.xpm",
 		&img_width, &img_height);
 	data->exit_img = mlx_xpm_file_to_image(data->mlx, "imgs/exit.xpm",
 		&img_width, &img_height);
@@ -502,26 +620,6 @@ void	creat_img(t_data *data)
 	data->collect = count_collect(data);
 }
 
-int	ft_strlen(char *str)
-{
-	int	i;
-
-	i = 0;
-	while (str[i])
-		i++;
-	return (i - 1);
-}
-
-int	ft_strstrlen(char **str)
-{
-	int	i;
-
-	i = 0;
-	while (str[i])
-		i++;
-	return (i);
-}
-
 int	main(void)
 {
 	t_data		*data;
@@ -531,10 +629,11 @@ int	main(void)
 
 	data = (t_data *)malloc(sizeof(t_data));
 	data->mlx = mlx_init();
-	data->map_file = "map5.ber";
+	data->map_file = "maps/map2.ber";
 	parse_map(data);
 	data->player = (t_player *)malloc(sizeof(t_player));
 	creat_img(data);
+	creat_number_img(data);
 	data->width = ft_strlen(data->map[0]) * 50;
 	data->height = ft_strstrlen(data->map) * 50;
 	ft_printf("width: %d\n", data->width);
