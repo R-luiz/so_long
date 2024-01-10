@@ -6,7 +6,7 @@
 /*   By: rluiz <rluiz@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/09 18:26:51 by rluiz             #+#    #+#             */
-/*   Updated: 2024/01/10 00:40:40 by rluiz            ###   ########.fr       */
+/*   Updated: 2024/01/10 01:09:46 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,6 +45,7 @@ typedef struct
 	int			width;
 	int			height;
 	int			collect;
+	int			move_count;
 	void		*mlx;
 	void		*mlx_win;
 }				t_data;
@@ -63,22 +64,84 @@ void	safeexit(t_data *data)
 	exit(0);
 }
 
-/*
+int	is_rectangular(t_data *data)
+{
+	int	i;
+	int	j;
+	int	k;
+
+	i = 0;
+	j = 0;
+	k = 0;
+	while (data->map[i])
+	{
+		while (data->map[i][j])
+			j++;
+		if (k == 0)
+			k = j;
+		if (k != j)
+			return (0);
+		j = 0;
+		i++;
+	}
+	return (1);
+}
+
+int	check_border_wall(t_data *data)
+{
+	int	i;
+	int	j;
+
+	i = 0;
+	j = 0;
+	while (data->map[i])
+	{
+		while (data->map[i][j])
+		{
+			if (i == 0 || j == 0 || i == ft_strstrlen(data->map) - 1
+				|| j == ft_strlen(data->map[0]) - 1)
+			{
+				if (data->map[i][j] != '1')
+					return (0);
+			}
+			j++;
+		}
+		i++;
+		j = 0;
+	}
+	return (1);
+}
+
+int	is_solvable(t_data *data)
+{
+	int	i;
+	int	j;
+	int	count;
+
+	i = 0;
+	j = 0;
+	count = 0;
+	while (data->map[i])
+	{
+		while (data->map[i][j])
+		{
+			if (data->map[i][j] == 'P')
+				count++;
+			j++;
+		}
+		i++;
+		j = 0;
+	}
+	if (count != 1)
+		return (0);
+	return (1);
+}
+
 void	check_map(t_data *data)
 {
-	int		i;
-	int		j;
-	int		k;
 	FILE	*file;
 	int		count;
 	char	buffer[BUFFER_SIZE];
-	FILE	*file;
-	int		count;
-	char	buffer[BUFFER_SIZE];
-	FILE	*file;
-	int		count;
-	char	*buffer;
-
 	if (is_rectangular(data) == 0)
 	{
 		printf("Error\n");
@@ -94,7 +157,13 @@ void	check_map(t_data *data)
 		printf("Error\n");
 		exit(0);
 	}
-}*/
+	if (is_solvable(data) == 0)
+	{
+		printf("Error\n");
+		exit(0);
+	}
+}
+
 int	get_line_count(const char *filename)
 {
 	FILE	*file;
@@ -246,6 +315,8 @@ void	player_move(t_data *data, int keycode)
 		data->player->pos.x -= 50;
 	if (keycode == 65363)
 		data->player->pos.x += 50;
+	data->move_count++;
+	printf("move count: %d\n", data->move_count);
 	check_player_pos(data);
 	refresh_window(data);
 }
@@ -322,7 +393,7 @@ void	creat_img(t_data *data)
 		&img_width, &img_height);
 	data->wall_img = mlx_xpm_file_to_image(data->mlx, "imgs/wall.xpm",
 		&img_width, &img_height);
-	data->collect_img = mlx_xpm_file_to_image(data->mlx, "imgs/collect.xpm",
+	data->collect_img = mlx_xpm_file_to_image(data->mlx, "imgs/collect2.xpm",
 		&img_width, &img_height);
 	data->exit_img = mlx_xpm_file_to_image(data->mlx, "imgs/exit.xpm",
 		&img_width, &img_height);
@@ -332,6 +403,8 @@ void	creat_img(t_data *data)
 	data->player_img = mlx_xpm_file_to_image(data->mlx, "imgs/player.xpm",
 		&img_width, &img_height);
 	data->player->collect = 0;
+	data->player->perv_pos = data->player->pos;
+	data->move_count = 0;
 	data->collect = count_collect(data);
 }
 
@@ -364,7 +437,7 @@ int	main(void)
 
 	data = (t_data *)malloc(sizeof(t_data));
 	data->mlx = mlx_init();
-	data->map_file = "map.ber";
+	data->map_file = "map5.ber";
 	parse_map(data);
 	data->player = (t_player *)malloc(sizeof(t_player));
 	creat_img(data);
