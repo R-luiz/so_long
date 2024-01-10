@@ -6,18 +6,18 @@
 /*   By: rluiz <rluiz@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/09 18:26:51 by rluiz             #+#    #+#             */
-/*   Updated: 2024/01/10 04:37:38 by rluiz            ###   ########.fr       */
+/*   Updated: 2024/01/10 04:55:06 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "./minilibx-linux/mlx.h"
 #include <fcntl.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <math.h>
 
 #define BUFFER_SIZE 1024
 
@@ -56,6 +56,7 @@ typedef struct
 	t_player	*player;
 	char		**map;
 	char		*map_file;
+	int			nb_map;
 	int			width;
 	int			height;
 	int			collect;
@@ -80,10 +81,10 @@ int	safeexit(t_data *data)
 
 void	ft_putchar(char c)
 {
-	ssize_t bytes_written;
+	ssize_t	bytes_written;
 
 	bytes_written = write(1, &c, 1);
-	if (bytes_written == -1) 
+	if (bytes_written == -1)
 		perror("write failed");
 }
 
@@ -122,7 +123,7 @@ int	ft_strstrlen(char **str)
 
 void	ft_putnbr(int nb)
 {
-	ssize_t bytes_written;
+	ssize_t	bytes_written;
 
 	bytes_written = 0;
 	if (nb == -2147483648)
@@ -623,7 +624,7 @@ void	creat_img(t_data *data)
 	data->collect = count_collect(data);
 }
 
-char *ft_strcpy(char *dest, char *src)
+char	*ft_strcpy(char *dest, char *src)
 {
 	int	i;
 
@@ -639,24 +640,24 @@ char *ft_strcpy(char *dest, char *src)
 	return (dest);
 }
 
-void	create_file_name(t_data *data, char **argv)
+int	ft_atoi(char *str)
 {
 	int	i;
-	
-	char *map;
-	map = "maps/map";
-	data->map_file = (char *)malloc(sizeof(char) * 16);
-	i = -1;
-	while (map[++i])
-		data->map_file[i] = map[i];
-	map = argv[1];
-	while (*map)
+	int	nb;
+
+	i = 0;
+	nb = 0;
+	while (str[i] >= '0' && str[i] <= '9')
 	{
-		data->map_file[i] = *map;
-		map++;
+		nb *= 10;
+		nb += ((int)str[i] - '0');
 		i++;
 	}
-	map = ".ber";
+	return (nb);
+}
+
+void	ft_strcpy2(t_data *data, char *map, int i)
+{
 	while (*map)
 	{
 		data->map_file[i] = *map;
@@ -665,14 +666,33 @@ void	create_file_name(t_data *data, char **argv)
 	}
 }
 
+void	create_file_name(t_data *data, char **argv)
+{
+	char	*map;
+
+	if (ft_atoi(argv[1]) == 0 || (ft_atoi(argv[1]) > data->nb_map - 1))
+	{
+		ft_printf("Error input file\n");
+		safeexit(data);
+	}
+	map = "maps/map";
+	data->map_file = (char *)malloc(sizeof(char) * 12 + ft_strlen(argv[1]));
+	ft_strcpy2(data, map, 0);
+	map = argv[1];
+	ft_strcpy2(data, map, 8);
+	map = ".ber";
+	ft_strcpy2(data, map, 9 + ft_strlen(argv[1]));
+}
+
 int	main(int argc, char **argv)
 {
-	t_data		*data;
+	t_data	*data;
 
 	if (argc > 2)
 		ft_printf("Error input\n");
 	data = (t_data *)malloc(sizeof(t_data));
 	data->mlx = mlx_init();
+	data->nb_map = 10;
 	create_file_name(data, argv);
 	parse_map(data);
 	data->player = (t_player *)malloc(sizeof(t_player));
