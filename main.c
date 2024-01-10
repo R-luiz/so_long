@@ -6,7 +6,7 @@
 /*   By: rluiz <rluiz@student.42lehavre.fr>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/09 18:26:51 by rluiz             #+#    #+#             */
-/*   Updated: 2024/01/10 18:44:26 by rluiz            ###   ########.fr       */
+/*   Updated: 2024/01/10 20:08:09 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,9 @@ typedef struct
 	void		*collect_img;
 	void		*exit_img;
 	void		*player_img;
+	void		*playerm_img;
 	void		*enemy_img;
+	void		*enemym_img;
 	void		*exitnplayer_img;
 	void		*zero_img;
 	void		*one_img;
@@ -456,21 +458,26 @@ void	refresh_window(t_data *data)
 				mlx_put_image_to_window(data->mlx, data->mlx_win,
 					data->exit_img, i, j);
 			else if (data->map[j / 50][i / 50] == 'P')
-				mlx_put_image_to_window(data->mlx, data->mlx_win,
-					data->player_img, i, j);
+				{
+					if (data->player->pos.x > data->player->perv_pos.x || data->player->pos.y > data->player->perv_pos.y)
+						mlx_put_image_to_window(data->mlx, data->mlx_win,
+							data->player_img, i, j);
+					else
+						mlx_put_image_to_window(data->mlx, data->mlx_win,
+							data->playerm_img, i, j);
+				}
 			else if (data->map[j / 50][i / 50] == 'F')
 				mlx_put_image_to_window(data->mlx, data->mlx_win,
 					data->exitnplayer_img, i, j);
 			else if (data->map[j / 50][i / 50] == '1')
 				mlx_put_image_to_window(data->mlx, data->mlx_win,
 					data->enemy_img, i, j);
-			else if (data->map[j / 50][i / 50] == '0' || data->map[j / 50][i
-				/ 50] == 'C')
-				mlx_put_image_to_window(data->mlx, data->mlx_win,
-					data->void_img, i, j);
 			else if (data->map[j / 50][i / 50] == 'X')
 				mlx_put_image_to_window(data->mlx, data->mlx_win,
-					data->enemy_img, i, j);
+					data->enemym_img, i, j);
+			else
+				mlx_put_image_to_window(data->mlx, data->mlx_win,
+					data->void_img, i, j);
 			j += 50;
 		}
 		i += 50;
@@ -566,6 +573,62 @@ void	collect_put_img(t_data *data)
 	}
 }
 
+void	move_enemy(t_data *data, int direction)
+{
+	//enemies move right and left in void then switch direction when they hit a wall
+	int	i;
+	int	j;
+	
+	i = 0;
+	j = 0;
+	direction = direction % 9;
+	direction = direction % 2;
+	printf("direction: %d\n", direction);
+	while (data->map[i])
+	{
+		while (data->map[i][j])
+		{
+			if (data->map[i][j] == 'X')
+			{
+				if (data->map[i][j + 1 * (-1 * -1 * direction)] == '0' || data->map[i][j + 1 * (-1 *-1 * direction)] == 'P')
+				{
+					if (data->map[i][j + 1] == 'P')
+					{
+						ft_printf("You lose!\n");
+						safeexit(data);
+					}
+					data->map[i][j] = '0';
+					mlx_put_image_to_window(data->mlx, data->mlx_win,
+						data->void_img, j * 50, (i + 1) * 50);
+					data->map[i][j + 1] = 'X';
+					mlx_put_image_to_window(data->mlx, data->mlx_win,
+						data->enemy_img, j * 50, (i + 1) * 50);
+					
+					break;
+				}
+				if (data->map[i][j - 1 * (-1 * -1 * direction)] == '0' || data->map[i][j - 1 * (-1 * -1 * direction)] == 'P')
+				{
+					if (data->map[i][j - 1] == 'P')
+					{
+						ft_printf("You lose!\n");
+						safeexit(data);
+					}
+					data->map[i][j] = '0';
+					mlx_put_image_to_window(data->mlx, data->mlx_win,
+						data->void_img, j * 50, (i + 1) * 50);
+					data->map[i][j - 1] = 'X';
+					mlx_put_image_to_window(data->mlx, data->mlx_win,
+						data->enemym_img, j * 50, (i - 1) * 50);
+					break;
+				}
+			}
+			j++;
+		}
+		i++;
+		j = 0;
+	}
+}
+
 void	player_move(t_data *data, int keycode)
 {
 	data->player->perv_pos = data->player->pos;
@@ -579,6 +642,7 @@ void	player_move(t_data *data, int keycode)
 		data->player->pos.x += 50;
 	data->move_count++;
 	check_player_pos(data);
+	move_enemy(data, data->move_count);
 	refresh_window(data);
 	count_put_img(data);
 	collect_put_img(data);
@@ -627,16 +691,20 @@ void	creat_img(t_data *data)
 		&img_width, &img_height);
 	data->wall_img = mlx_xpm_file_to_image(data->mlx, "imgs/wall.xpm",
 		&img_width, &img_height);
-	data->collect_img = mlx_xpm_file_to_image(data->mlx, "imgs/collect2.xpm",
+	data->collect_img = mlx_xpm_file_to_image(data->mlx, "imgs/collect.xpm",
 		&img_width, &img_height);
 	data->exit_img = mlx_xpm_file_to_image(data->mlx, "imgs/exit.xpm",
 		&img_width, &img_height);
 	data->enemy_img = mlx_xpm_file_to_image(data->mlx, "imgs/enemy.xpm",
 		&img_width, &img_height);
+	data->enemym_img = mlx_xpm_file_to_image(data->mlx, "imgs/enemym.xpm",
+		&img_width, &img_height);
 	data->exitnplayer_img = mlx_xpm_file_to_image(data->mlx,
 		"imgs/exitnplayer.xpm", &img_width, &img_height);
 	data->player->pos = find_player(data);
 	data->player_img = mlx_xpm_file_to_image(data->mlx, "imgs/player.xpm",
+		&img_width, &img_height);
+	data->playerm_img = mlx_xpm_file_to_image(data->mlx, "imgs/playerm.xpm",
 		&img_width, &img_height);
 	data->player->collect = 0;
 	data->player->perv_pos = data->player->pos;
