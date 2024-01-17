@@ -6,7 +6,7 @@
 /*   By: rluiz <rluiz@student.42lehavre.fr>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/09 18:26:51 by rluiz             #+#    #+#             */
-/*   Updated: 2024/01/17 19:07:03 by rluiz            ###   ########.fr       */
+/*   Updated: 2024/01/17 19:11:47 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -905,7 +905,7 @@ int enemy_movement_hook(void *param) {
 	{
         unsigned long current_time = (unsigned long)time(NULL);
 
-        if (current_time - data->last_enemy_move_time >= 0.4) {
+        if (current_time - data->last_enemy_move_time >= 0.8) {
             pthread_mutex_lock(&data->mutex);
             move_enemy(data);
             refresh_window(data);
