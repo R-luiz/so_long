@@ -6,69 +6,107 @@
 /*   By: rluiz <rluiz@student.42lehavre.fr>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/09 18:26:51 by rluiz             #+#    #+#             */
-/*   Updated: 2024/01/10 20:08:09 by rluiz            ###   ########.fr       */
+/*   Updated: 2024/01/17 18:47:01 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "./minilibx-linux/mlx.h"
+#include <X11/X.h>
+#include <X11/Xlib.h>
+#include <X11/keysym.h>
 #include <fcntl.h>
 #include <math.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #define BUFFER_SIZE 1024
 
 typedef struct
 {
-	int			x;
-	int			y;
-}				t_pos;
+	int				x;
+	int				y;
+}					t_pos;
 
 typedef struct
 {
-	t_pos		pos;
-	t_pos		perv_pos;
-	int			collect;
-}				t_player;
+	t_pos			pos;
+	t_pos			perv_pos;
+	int				collect;
+}					t_player;
 
 typedef struct
 {
-	void		*void_img;
-	void		*wall_img;
-	void		*collect_img;
-	void		*exit_img;
-	void		*player_img;
-	void		*playerm_img;
-	void		*enemy_img;
-	void		*enemym_img;
-	void		*exitnplayer_img;
-	void		*zero_img;
-	void		*one_img;
-	void		*two_img;
-	void		*three_img;
-	void		*four_img;
-	void		*five_img;
-	void		*six_img;
-	void		*seven_img;
-	void		*eight_img;
-	void		*nine_img;
-	t_player	*player;
-	char		**map;
-	char		*map_file;
-	int			nb_map;
-	int			width;
-	int			height;
-	int			collect;
-	int			move_count;
-	void		*mlx;
-	void		*mlx_win;
-}				t_data;
+	t_pos			pos;
+	t_pos			perv_pos;
+}					t_enemy;
+
+typedef struct
+{
+	t_enemy			*enemy;
+	pthread_mutex_t	mutex;
+	int				enemy_count;
+}					t_enemies;
+
+typedef struct
+{
+	unsigned long	last_enemy_move_time;
+	void			*void_img;
+	void			*wall_img;
+	void			*collect_img;
+	void			*exit_img;
+	void			*player_img;
+	void			*playerm_img;
+	void			*enemy_img;
+	void			*enemym_img;
+	void			*exitnplayer_img;
+	void			*zero_img;
+	void			*one_img;
+	void			*two_img;
+	void			*three_img;
+	void			*four_img;
+	void			*five_img;
+	void			*six_img;
+	void			*seven_img;
+	void			*eight_img;
+	void			*nine_img;
+	t_player		*player;
+	t_enemies		*enemies;
+	char			**map;
+	char			*map_file;
+	int				nb_map;
+	int				width;
+	int				height;
+	int				collect;
+	int				move_count;
+	void			*mlx;
+	void			*mlx_win;
+	pthread_mutex_t	mutex;
+	int				game_over;
+}					t_data;
 
 int	safeexit(t_data *data)
 {
+	int	i;
+
+	i = 0;
+	while (data->map[i])
+	{
+		free(data->map[i]);
+		i++;
+	}
+	free(data->map);
+	free(data->player);
+	free(data->enemies->enemy);
+	free(data->enemies);
+	free(data->map_file);
+	data->game_over = 1;
+	pthread_mutex_destroy(&data->mutex);
+	pthread_mutex_destroy(&data->enemies->mutex);
 	mlx_destroy_image(data->mlx, data->void_img);
 	mlx_destroy_image(data->mlx, data->wall_img);
 	mlx_destroy_image(data->mlx, data->collect_img);
@@ -296,7 +334,6 @@ int	is_solvable(t_data *data)
 	if (data->map[i - 1][j] == 'X' || data->map[i + 1][j] == 'X'
 		|| data->map[i][j - 1] == 'X' || data->map[i][j + 1] == 'X')
 		return (1);
-	
 	return (0);
 }
 
@@ -422,6 +459,7 @@ void	check_player_pos(t_data *data)
 	if (data->map[data->player->pos.y / 50][data->player->pos.x / 50] == 'X')
 	{
 		ft_printf("You lose!\n");
+		data->game_over = 1;
 		safeexit(data);
 	}
 	if (data->map[data->player->pos.y / 50][data->player->pos.x / 50] == '0')
@@ -434,54 +472,6 @@ void	check_player_pos(t_data *data)
 			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x
 				/ 50] = '0';
 		data->map[data->player->pos.y / 50][data->player->pos.x / 50] = 'P';
-	}
-}
-
-void	refresh_window(t_data *data)
-{
-	int	i;
-	int	j;
-
-	i = 0;
-	j = 0;
-	while (i < data->width)
-	{
-		while (j < data->height)
-		{
-			if (data->map[j / 50][i / 50] == '1')
-				mlx_put_image_to_window(data->mlx, data->mlx_win,
-					data->wall_img, i, j);
-			else if (data->map[j / 50][i / 50] == 'C')
-				mlx_put_image_to_window(data->mlx, data->mlx_win,
-					data->collect_img, i, j);
-			else if (data->map[j / 50][i / 50] == 'E')
-				mlx_put_image_to_window(data->mlx, data->mlx_win,
-					data->exit_img, i, j);
-			else if (data->map[j / 50][i / 50] == 'P')
-				{
-					if (data->player->pos.x > data->player->perv_pos.x || data->player->pos.y > data->player->perv_pos.y)
-						mlx_put_image_to_window(data->mlx, data->mlx_win,
-							data->player_img, i, j);
-					else
-						mlx_put_image_to_window(data->mlx, data->mlx_win,
-							data->playerm_img, i, j);
-				}
-			else if (data->map[j / 50][i / 50] == 'F')
-				mlx_put_image_to_window(data->mlx, data->mlx_win,
-					data->exitnplayer_img, i, j);
-			else if (data->map[j / 50][i / 50] == '1')
-				mlx_put_image_to_window(data->mlx, data->mlx_win,
-					data->enemy_img, i, j);
-			else if (data->map[j / 50][i / 50] == 'X')
-				mlx_put_image_to_window(data->mlx, data->mlx_win,
-					data->enemym_img, i, j);
-			else
-				mlx_put_image_to_window(data->mlx, data->mlx_win,
-					data->void_img, i, j);
-			j += 50;
-		}
-		i += 50;
-		j = 0;
 	}
 }
 
@@ -573,60 +563,56 @@ void	collect_put_img(t_data *data)
 	}
 }
 
-void	move_enemy(t_data *data, int direction)
+void	refresh_window(t_data *data)
 {
-	//enemies move right and left in void then switch direction when they hit a wall
 	int	i;
 	int	j;
-	
+
 	i = 0;
 	j = 0;
-	direction = direction % 9;
-	direction = direction % 2;
-	printf("direction: %d\n", direction);
-	while (data->map[i])
+	while (i < data->width)
 	{
-		while (data->map[i][j])
+		while (j < data->height)
 		{
-			if (data->map[i][j] == 'X')
+			if (data->map[j / 50][i / 50] == '1')
+				mlx_put_image_to_window(data->mlx, data->mlx_win,
+					data->wall_img, i, j);
+			else if (data->map[j / 50][i / 50] == 'C')
+				mlx_put_image_to_window(data->mlx, data->mlx_win,
+					data->collect_img, i, j);
+			else if (data->map[j / 50][i / 50] == 'E')
+				mlx_put_image_to_window(data->mlx, data->mlx_win,
+					data->exit_img, i, j);
+			else if (data->map[j / 50][i / 50] == 'P')
 			{
-				if (data->map[i][j + 1 * (-1 * -1 * direction)] == '0' || data->map[i][j + 1 * (-1 *-1 * direction)] == 'P')
-				{
-					if (data->map[i][j + 1] == 'P')
-					{
-						ft_printf("You lose!\n");
-						safeexit(data);
-					}
-					data->map[i][j] = '0';
+				if (data->player->pos.x > data->player->perv_pos.x
+					|| data->player->pos.y > data->player->perv_pos.y)
 					mlx_put_image_to_window(data->mlx, data->mlx_win,
-						data->void_img, j * 50, (i + 1) * 50);
-					data->map[i][j + 1] = 'X';
+						data->player_img, i, j);
+				else
 					mlx_put_image_to_window(data->mlx, data->mlx_win,
-						data->enemy_img, j * 50, (i + 1) * 50);
-					
-					break;
-				}
-				if (data->map[i][j - 1 * (-1 * -1 * direction)] == '0' || data->map[i][j - 1 * (-1 * -1 * direction)] == 'P')
-				{
-					if (data->map[i][j - 1] == 'P')
-					{
-						ft_printf("You lose!\n");
-						safeexit(data);
-					}
-					data->map[i][j] = '0';
-					mlx_put_image_to_window(data->mlx, data->mlx_win,
-						data->void_img, j * 50, (i + 1) * 50);
-					data->map[i][j - 1] = 'X';
-					mlx_put_image_to_window(data->mlx, data->mlx_win,
-						data->enemym_img, j * 50, (i - 1) * 50);
-					break;
-				}
+						data->playerm_img, i, j);
 			}
-			j++;
+			else if (data->map[j / 50][i / 50] == 'F')
+				mlx_put_image_to_window(data->mlx, data->mlx_win,
+					data->exitnplayer_img, i, j);
+			else if (data->map[j / 50][i / 50] == '1')
+				mlx_put_image_to_window(data->mlx, data->mlx_win,
+					data->enemy_img, i, j);
+			else if (data->map[j / 50][i / 50] == 'X')
+				mlx_put_image_to_window(data->mlx, data->mlx_win,
+					data->enemym_img, i, j);
+			else
+				mlx_put_image_to_window(data->mlx, data->mlx_win,
+					data->void_img, i, j);
+			j += 50;
 		}
-		i++;
+		i += 50;
 		j = 0;
 	}
+	count_put_img(data);
+	collect_put_img(data);
+	mlx_do_sync(data->mlx);
 }
 
 void	player_move(t_data *data, int keycode)
@@ -642,11 +628,7 @@ void	player_move(t_data *data, int keycode)
 		data->player->pos.x += 50;
 	data->move_count++;
 	check_player_pos(data);
-	move_enemy(data, data->move_count);
 	refresh_window(data);
-	count_put_img(data);
-	collect_put_img(data);
-	// ft_printf("move count: %d\n", data->move_count);
 }
 
 int	hook(int keycode, void *param)
@@ -760,7 +742,7 @@ void	create_file_name(t_data *data, char **argv, int argc)
 
 	if (argc == 1)
 	{
-		data->map_file = "maps/map1.ber";
+		data->map_file = "maps/map2.ber";
 		return ;
 	}
 	if (ft_atoi(argv[1]) == 0 || (ft_atoi(argv[1]) > data->nb_map - 1))
@@ -777,19 +759,161 @@ void	create_file_name(t_data *data, char **argv, int argc)
 	ft_strcpy2(data, map, 9 + ft_strlen(argv[1]));
 }
 
+void	fill_enemies(t_data *data)
+{
+	int	i;
+	int	j;
+	int	k;
+
+	i = 0;
+	j = 0;
+	k = 0;
+	while (data->map[i])
+	{
+		while (data->map[i][j])
+		{
+			if (data->map[i][j] == 'X')
+				k++;
+			j++;
+		}
+		i++;
+		j = 0;
+	}
+	data->enemies->enemy = (t_enemy *)malloc(sizeof(t_enemy) * k);
+	i = 0;
+	j = 0;
+	k = 0;
+	while (data->map[i])
+	{
+		while (data->map[i][j])
+		{
+			if (data->map[i][j] == 'X')
+			{
+				data->enemies->enemy[k].pos.x = j * 50;
+				data->enemies->enemy[k].pos.y = i * 50;
+				data->enemies->enemy[k].perv_pos.x = j * 50;
+				data->enemies->enemy[k].perv_pos.y = i * 50;
+				k++;
+			}
+			j++;
+		}
+		i++;
+		j = 0;
+	}
+	data->enemies->enemy_count = k;
+}
+
+char	get_caracter_enemy(t_data *data, int i, int j, int k)
+{
+	return (data->map[data->enemies->enemy[i].pos.y / 50
+		+ k][data->enemies->enemy[i].pos.x / 50 + j]);
+}
+
+void	fill_caracter_enemy(t_data *data, int i, int j, int k, char c)
+{
+	data->map[data->enemies->enemy[i].pos.y / 50
+		+ k][data->enemies->enemy[i].pos.x / 50 + j] = c;
+}
+
+void	fill_caracter_enemy_prev(t_data *data, int i, int j, int k, char c)
+{
+	data->map[data->enemies->enemy[i].perv_pos.y / 50
+		+ k][data->enemies->enemy[i].perv_pos.x / 50 + j] = c;
+}
+
+void	move_enemy(t_data *data)
+{
+	int	i;
+
+	// enemies move right and left in void then switch direction when they hit a wall
+	i = 0;
+	while (i < data->enemies->enemy_count)
+	{
+		if (data->enemies->enemy[i].pos.x >= data->enemies->enemy[i].perv_pos.x)
+		{
+			if (get_caracter_enemy(data, i, 1, 0) == '0'
+				|| get_caracter_enemy(data, i, 1, 0) == 'P')
+			{
+				data->enemies->enemy[i].perv_pos = data->enemies->enemy[i].pos;
+				data->enemies->enemy[i].pos.x += 50;
+			}
+			else if (get_caracter_enemy(data, i, -1, 0) == '0'
+				|| get_caracter_enemy(data, i, -1, 0) == 'P')
+			{
+				data->enemies->enemy[i].perv_pos = data->enemies->enemy[i].pos;
+				data->enemies->enemy[i].pos.x -= 50;
+			}
+		}
+		else
+		{
+			if (get_caracter_enemy(data, i, -1, 0) == '0'
+				|| get_caracter_enemy(data, i, -1, 0) == 'P')
+			{
+				data->enemies->enemy[i].perv_pos = data->enemies->enemy[i].pos;
+				data->enemies->enemy[i].pos.x -= 50;
+			}
+			else if (get_caracter_enemy(data, i, 1, 0) == '0'
+				|| get_caracter_enemy(data, i, 1, 0) == 'P')
+			{
+				data->enemies->enemy[i].perv_pos = data->enemies->enemy[i].pos;
+				data->enemies->enemy[i].pos.x += 50;
+			}
+		}
+		if (get_caracter_enemy(data, i, 0, 0) == 'P')
+		{
+			ft_printf("You lose!\n");
+			data->game_over = 1;
+			safeexit(data);
+		}
+		else if (get_caracter_enemy(data, i, 0, 0) == '0')
+		{
+			fill_caracter_enemy_prev(data, i, 0, 0, '0');
+			fill_caracter_enemy(data, i, 0, 0, 'X');
+		}
+		i++;
+	}
+}
+
+int enemy_movement_hook(void *param) {
+    t_data *data = (t_data *)param;
+
+    if (data->game_over == 0) 
+	{
+        unsigned long current_time = (unsigned long)time(NULL);
+
+        if (current_time - data->last_enemy_move_time >= 0.4) {
+            pthread_mutex_lock(&data->mutex);
+            move_enemy(data);
+            refresh_window(data);
+            pthread_mutex_unlock(&data->mutex);
+            data->last_enemy_move_time = current_time;
+        }
+    }
+
+    return (0);
+}
+
 int	main(int argc, char **argv)
 {
 	t_data	*data;
 
+	if (!XInitThreads())
+	{
+		fprintf(stderr, "Error: XInitThreads failed to initialize.\n");
+		return (EXIT_FAILURE);
+	}
 	if (argc > 2)
 		ft_printf("Error input\n");
 	data = (t_data *)malloc(sizeof(t_data));
 	data->mlx = mlx_init();
 	data->nb_map = 10;
+	data->game_over = 0;
+	data->last_enemy_move_time = 0;
 	create_file_name(data, argv, argc);
 	parse_map(data);
 	check_map(data);
 	data->player = (t_player *)malloc(sizeof(t_player));
+	data->enemies = (t_enemies *)malloc(sizeof(t_enemies));
 	creat_img(data);
 	creat_number_img(data);
 	data->width = ft_strlen(data->map[0]) * 50;
@@ -797,8 +921,15 @@ int	main(int argc, char **argv)
 	data->mlx_win = mlx_new_window(data->mlx, data->width, data->height,
 		"so_long");
 	refresh_window(data);
+	count_put_img(data);
+	collect_put_img(data);
+	fill_enemies(data);
+	pthread_mutex_init(&data->mutex, NULL);
+	pthread_mutex_init(&data->enemies->mutex, NULL);
 	mlx_hook(data->mlx_win, 33, 1L << 17, safeexit, data);
-	mlx_key_hook(data->mlx_win, hook, (void *)data);
+	mlx_hook(data->mlx_win, KeyPress, KeyPressMask, hook, data);
+	mlx_loop_hook(data->mlx, enemy_movement_hook, data);
 	mlx_loop(data->mlx);
+	safeexit(data);
 	return (0);
 }

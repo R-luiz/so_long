@@ -12,7 +12,7 @@ CFLAGS = -Wall -Wextra -Werror -O3 -g
 
 $(NAME): $(OBJ)
 	cd ./minilibx-linux && ./configure && $(MAKE)
-	$(CC) ${OBJ} $(CFLAGS) -Iminilibx-linux minilibx-linux/libmlx_Linux.a -lXext -lX11 -lm -lz -o $(NAME)
+	$(CC) ${OBJ} $(CFLAGS) -Iminilibx-linux minilibx-linux/libmlx_Linux.a -lXext -lX11 -lm -lz -lpthread -o $(NAME)
 
 all: $(NAME)
 
