@@ -6,7 +6,7 @@
 /*   By: rluiz <rluiz@student.42lehavre.fr>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/09 18:26:51 by rluiz             #+#    #+#             */
-/*   Updated: 2024/01/17 18:47:01 by rluiz            ###   ########.fr       */
+/*   Updated: 2024/01/17 19:07:03 by rluiz            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,14 +35,14 @@ typedef struct
 typedef struct
 {
 	t_pos			pos;
-	t_pos			perv_pos;
+	t_pos			prev_pos;
 	int				collect;
 }					t_player;
 
 typedef struct
 {
 	t_pos			pos;
-	t_pos			perv_pos;
+	t_pos			prev_pos;
 }					t_enemy;
 
 typedef struct
@@ -103,18 +103,30 @@ int	safeexit(t_data *data)
 	free(data->player);
 	free(data->enemies->enemy);
 	free(data->enemies);
-	free(data->map_file);
 	data->game_over = 1;
 	pthread_mutex_destroy(&data->mutex);
-	pthread_mutex_destroy(&data->enemies->mutex);
 	mlx_destroy_image(data->mlx, data->void_img);
 	mlx_destroy_image(data->mlx, data->wall_img);
 	mlx_destroy_image(data->mlx, data->collect_img);
 	mlx_destroy_image(data->mlx, data->exit_img);
 	mlx_destroy_image(data->mlx, data->player_img);
+	mlx_destroy_image(data->mlx, data->playerm_img);
 	mlx_destroy_image(data->mlx, data->enemy_img);
+	mlx_destroy_image(data->mlx, data->enemym_img);
+	mlx_destroy_image(data->mlx, data->exitnplayer_img);
+	mlx_destroy_image(data->mlx, data->zero_img);
+	mlx_destroy_image(data->mlx, data->one_img);
+	mlx_destroy_image(data->mlx, data->two_img);
+	mlx_destroy_image(data->mlx, data->three_img);
+	mlx_destroy_image(data->mlx, data->four_img);
+	mlx_destroy_image(data->mlx, data->five_img);
+	mlx_destroy_image(data->mlx, data->six_img);
+	mlx_destroy_image(data->mlx, data->seven_img);
+	mlx_destroy_image(data->mlx, data->eight_img);
+	mlx_destroy_image(data->mlx, data->nine_img);
 	mlx_destroy_window(data->mlx, data->mlx_win);
 	mlx_destroy_display(data->mlx);
+	free(data->mlx);
 	free(data);
 	exit(0);
 }
@@ -426,16 +438,16 @@ void	print_map(t_data *data)
 void	check_player_pos(t_data *data)
 {
 	if (data->map[data->player->pos.y / 50][data->player->pos.x / 50] == '1')
-		data->player->pos = data->player->perv_pos;
+		data->player->pos = data->player->prev_pos;
 	if (data->map[data->player->pos.y / 50][data->player->pos.x / 50] == 'C')
 	{
 		data->map[data->player->pos.y / 50][data->player->pos.x / 50] = 'P';
-		if (data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x
+		if (data->map[data->player->prev_pos.y / 50][data->player->prev_pos.x
 			/ 50] == 'F')
-			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x
+			data->map[data->player->prev_pos.y / 50][data->player->prev_pos.x
 				/ 50] = 'E';
 		else
-			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x
+			data->map[data->player->prev_pos.y / 50][data->player->prev_pos.x
 				/ 50] = '0';
 		data->player->collect++;
 		ft_printf("collect: %d / %d\n", data->player->collect, data->collect);
@@ -446,7 +458,7 @@ void	check_player_pos(t_data *data)
 		if (data->player->collect < data->collect)
 		{
 			data->map[data->player->pos.y / 50][data->player->pos.x / 50] = 'F';
-			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x
+			data->map[data->player->prev_pos.y / 50][data->player->prev_pos.x
 				/ 50] = '0';
 			ft_printf("You need to collect all the collectibles before exiting!\n");
 		}
@@ -464,12 +476,12 @@ void	check_player_pos(t_data *data)
 	}
 	if (data->map[data->player->pos.y / 50][data->player->pos.x / 50] == '0')
 	{
-		if (data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x
+		if (data->map[data->player->prev_pos.y / 50][data->player->prev_pos.x
 			/ 50] == 'F')
-			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x
+			data->map[data->player->prev_pos.y / 50][data->player->prev_pos.x
 				/ 50] = 'E';
 		else
-			data->map[data->player->perv_pos.y / 50][data->player->perv_pos.x
+			data->map[data->player->prev_pos.y / 50][data->player->prev_pos.x
 				/ 50] = '0';
 		data->map[data->player->pos.y / 50][data->player->pos.x / 50] = 'P';
 	}
@@ -567,9 +579,11 @@ void	refresh_window(t_data *data)
 {
 	int	i;
 	int	j;
+	int k;
 
 	i = 0;
 	j = 0;
+	k = 0;
 	while (i < data->width)
 	{
 		while (j < data->height)
@@ -585,8 +599,8 @@ void	refresh_window(t_data *data)
 					data->exit_img, i, j);
 			else if (data->map[j / 50][i / 50] == 'P')
 			{
-				if (data->player->pos.x > data->player->perv_pos.x
-					|| data->player->pos.y > data->player->perv_pos.y)
+				if (data->player->pos.x > data->player->prev_pos.x
+					|| data->player->pos.y > data->player->prev_pos.y)
 					mlx_put_image_to_window(data->mlx, data->mlx_win,
 						data->player_img, i, j);
 				else
@@ -599,16 +613,26 @@ void	refresh_window(t_data *data)
 			else if (data->map[j / 50][i / 50] == '1')
 				mlx_put_image_to_window(data->mlx, data->mlx_win,
 					data->enemy_img, i, j);
-			else if (data->map[j / 50][i / 50] == 'X')
-				mlx_put_image_to_window(data->mlx, data->mlx_win,
-					data->enemym_img, i, j);
-			else
+			else if (data->map[j / 50][i / 50] == '0')
 				mlx_put_image_to_window(data->mlx, data->mlx_win,
 					data->void_img, i, j);
 			j += 50;
 		}
 		i += 50;
 		j = 0;
+	}
+	i = 0;
+	while (i < data->enemies->enemy_count)
+	{
+		if (data->enemies->enemy[i].pos.x >= data->enemies->enemy[i].prev_pos.x)
+			mlx_put_image_to_window(data->mlx, data->mlx_win,
+				data->enemym_img, data->enemies->enemy[i].pos.x,
+				data->enemies->enemy[i].pos.y);
+		else
+			mlx_put_image_to_window(data->mlx, data->mlx_win,
+				data->enemy_img, data->enemies->enemy[i].pos.x,
+				data->enemies->enemy[i].pos.y);
+		i++;
 	}
 	count_put_img(data);
 	collect_put_img(data);
@@ -617,7 +641,7 @@ void	refresh_window(t_data *data)
 
 void	player_move(t_data *data, int keycode)
 {
-	data->player->perv_pos = data->player->pos;
+	data->player->prev_pos = data->player->pos;
 	if (keycode == 65362)
 		data->player->pos.y -= 50;
 	if (keycode == 65364)
@@ -689,7 +713,7 @@ void	creat_img(t_data *data)
 	data->playerm_img = mlx_xpm_file_to_image(data->mlx, "imgs/playerm.xpm",
 		&img_width, &img_height);
 	data->player->collect = 0;
-	data->player->perv_pos = data->player->pos;
+	data->player->prev_pos = data->player->pos;
 	data->move_count = 0;
 	data->collect = count_collect(data);
 }
@@ -791,8 +815,8 @@ void	fill_enemies(t_data *data)
 			{
 				data->enemies->enemy[k].pos.x = j * 50;
 				data->enemies->enemy[k].pos.y = i * 50;
-				data->enemies->enemy[k].perv_pos.x = j * 50;
-				data->enemies->enemy[k].perv_pos.y = i * 50;
+				data->enemies->enemy[k].prev_pos.x = j * 50;
+				data->enemies->enemy[k].prev_pos.y = i * 50;
 				k++;
 			}
 			j++;
@@ -817,8 +841,8 @@ void	fill_caracter_enemy(t_data *data, int i, int j, int k, char c)
 
 void	fill_caracter_enemy_prev(t_data *data, int i, int j, int k, char c)
 {
-	data->map[data->enemies->enemy[i].perv_pos.y / 50
-		+ k][data->enemies->enemy[i].perv_pos.x / 50 + j] = c;
+	data->map[data->enemies->enemy[i].prev_pos.y / 50
+		+ k][data->enemies->enemy[i].prev_pos.x / 50 + j] = c;
 }
 
 void	move_enemy(t_data *data)
@@ -829,18 +853,18 @@ void	move_enemy(t_data *data)
 	i = 0;
 	while (i < data->enemies->enemy_count)
 	{
-		if (data->enemies->enemy[i].pos.x >= data->enemies->enemy[i].perv_pos.x)
+		if (data->enemies->enemy[i].pos.x >= data->enemies->enemy[i].prev_pos.x)
 		{
 			if (get_caracter_enemy(data, i, 1, 0) == '0'
 				|| get_caracter_enemy(data, i, 1, 0) == 'P')
 			{
-				data->enemies->enemy[i].perv_pos = data->enemies->enemy[i].pos;
+				data->enemies->enemy[i].prev_pos = data->enemies->enemy[i].pos;
 				data->enemies->enemy[i].pos.x += 50;
 			}
 			else if (get_caracter_enemy(data, i, -1, 0) == '0'
 				|| get_caracter_enemy(data, i, -1, 0) == 'P')
 			{
-				data->enemies->enemy[i].perv_pos = data->enemies->enemy[i].pos;
+				data->enemies->enemy[i].prev_pos = data->enemies->enemy[i].pos;
 				data->enemies->enemy[i].pos.x -= 50;
 			}
 		}
@@ -849,13 +873,13 @@ void	move_enemy(t_data *data)
 			if (get_caracter_enemy(data, i, -1, 0) == '0'
 				|| get_caracter_enemy(data, i, -1, 0) == 'P')
 			{
-				data->enemies->enemy[i].perv_pos = data->enemies->enemy[i].pos;
+				data->enemies->enemy[i].prev_pos = data->enemies->enemy[i].pos;
 				data->enemies->enemy[i].pos.x -= 50;
 			}
 			else if (get_caracter_enemy(data, i, 1, 0) == '0'
 				|| get_caracter_enemy(data, i, 1, 0) == 'P')
 			{
-				data->enemies->enemy[i].perv_pos = data->enemies->enemy[i].pos;
+				data->enemies->enemy[i].prev_pos = data->enemies->enemy[i].pos;
 				data->enemies->enemy[i].pos.x += 50;
 			}
 		}
@@ -897,11 +921,6 @@ int	main(int argc, char **argv)
 {
 	t_data	*data;
 
-	if (!XInitThreads())
-	{
-		fprintf(stderr, "Error: XInitThreads failed to initialize.\n");
-		return (EXIT_FAILURE);
-	}
 	if (argc > 2)
 		ft_printf("Error input\n");
 	data = (t_data *)malloc(sizeof(t_data));
@@ -920,12 +939,12 @@ int	main(int argc, char **argv)
 	data->height = ft_strstrlen(data->map) * 50;
 	data->mlx_win = mlx_new_window(data->mlx, data->width, data->height,
 		"so_long");
-	refresh_window(data);
 	count_put_img(data);
 	collect_put_img(data);
 	fill_enemies(data);
 	pthread_mutex_init(&data->mutex, NULL);
 	pthread_mutex_init(&data->enemies->mutex, NULL);
+	refresh_window(data);
 	mlx_hook(data->mlx_win, 33, 1L << 17, safeexit, data);
 	mlx_hook(data->mlx_win, KeyPress, KeyPressMask, hook, data);
 	mlx_loop_hook(data->mlx, enemy_movement_hook, data);
