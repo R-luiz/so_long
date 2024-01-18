@@ -905,11 +905,9 @@ int enemy_movement_hook(void *param) {
 	{
         unsigned long current_time = (unsigned long)time(NULL);
 
-        if (current_time - data->last_enemy_move_time >= 0.8) {
-            pthread_mutex_lock(&data->mutex);
+        if (current_time - data->last_enemy_move_time >= 0.2) {
             move_enemy(data);
             refresh_window(data);
-            pthread_mutex_unlock(&data->mutex);
             data->last_enemy_move_time = current_time;
         }
     }
